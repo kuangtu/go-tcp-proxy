@@ -16,8 +16,10 @@ type Proxy struct {
 	errsig        chan bool
 	tlsUnwrapp    bool
 	tlsAddress    string
-
+    
+    //类型是func，
 	Matcher  func([]byte)
+    //函数返回类型 []byte
 	Replacer func([]byte) []byte
 
 	// Settings
@@ -28,12 +30,15 @@ type Proxy struct {
 
 // New - Create a new Proxy instance. Takes over local connection passed in,
 // and closes it when finished.
+//返回了结构体指针
 func New(lconn *net.TCPConn, laddr, raddr *net.TCPAddr) *Proxy {
 	return &Proxy{
+        //结构体中，键值通过":"初始化
 		lconn:  lconn,
 		laddr:  laddr,
 		raddr:  raddr,
 		erred:  false,
+        //channel 其中的数据类型为bool
 		errsig: make(chan bool),
 		Log:    NullLogger{},
 	}
@@ -50,11 +55,13 @@ func NewTLSUnwrapped(lconn *net.TCPConn, laddr, raddr *net.TCPAddr, addr string)
 }
 
 type setNoDelayer interface {
+    //实现接口中的方法
 	SetNoDelay(bool) error
 }
 
 // Start - open connection to remote and start proxying data.
 func (p *Proxy) Start() {
+    //通过deferred, Start结束之后，关闭socket连接。
 	defer p.lconn.Close()
 
 	var err error
@@ -62,6 +69,7 @@ func (p *Proxy) Start() {
 	if p.tlsUnwrapp {
 		p.rconn, err = tls.Dial("tcp", p.tlsAddress, nil)
 	} else {
+        //TCP连接对端
 		p.rconn, err = net.DialTCP("tcp", nil, p.raddr)
 	}
 	if err != nil {
@@ -80,14 +88,16 @@ func (p *Proxy) Start() {
 		}
 	}
 
-	//display both ends
+	//dis play both ends
 	p.Log.Info("Opened %s >>> %s", p.laddr.String(), p.raddr.String())
 
 	//bidirectional copy
+    //start之后，通过协程读取
 	go p.pipe(p.lconn, p.rconn)
 	go p.pipe(p.rconn, p.lconn)
 
 	//wait for close...
+    //channel接收
 	<-p.errsig
 	p.Log.Info("Closed (%d bytes sent, %d bytes recieved)", p.sentBytes, p.receivedBytes)
 }
@@ -103,6 +113,7 @@ func (p *Proxy) err(s string, err error) {
 	p.erred = true
 }
 
+//pipe函数，参数类型是io.ReadWriter
 func (p *Proxy) pipe(src, dst io.ReadWriter) {
 	islocal := src == p.lconn
 
@@ -121,8 +132,10 @@ func (p *Proxy) pipe(src, dst io.ReadWriter) {
 	}
 
 	//directional copy (64k buffer)
+    //make创建了一个字节切片，长度为0xffff
 	buff := make([]byte, 0xffff)
 	for {
+        //从src中读取字节到buff
 		n, err := src.Read(buff)
 		if err != nil {
 			p.err("Read failed '%s'\n", err)
@@ -145,6 +158,7 @@ func (p *Proxy) pipe(src, dst io.ReadWriter) {
 		p.Log.Trace(byteFormat, b)
 
 		//write out result
+        //将读取的字节，写入到dst socket中
 		n, err = dst.Write(b)
 		if err != nil {
 			p.err("Write failed '%s'\n", err)

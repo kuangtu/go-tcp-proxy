@@ -15,9 +15,13 @@ type Logger interface {
 }
 
 // NullLogger - An empty logger that ignores everything
+//定义结构体NullLogger
 type NullLogger struct{}
 
 // Trace - no-op
+//函数声明，func (参数列表）
+//变量 类型 l NullLogger
+// ...不定数目的变量，类型是接口类型
 func (l NullLogger) Trace(f string, args ...interface{}) {}
 
 // Debug - no-op

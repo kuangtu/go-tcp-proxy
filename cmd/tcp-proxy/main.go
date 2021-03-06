@@ -7,16 +7,19 @@ import (
 	"os"
 	"regexp"
 	"strings"
-
+    //导入包重命名，proxy
 	proxy "github.com/jpillora/go-tcp-proxy"
 )
 
+//变量创建
+//var 变量名字 类型=表达式
+//可以省略类型或者=表达式中的一个
 var (
 	version = "0.0.0-src"
 	matchid = uint64(0)
 	connid  = uint64(0)
 	logger  proxy.ColorLogger
-
+    //flag命令行处理包,参数名称、默认值、帮助消息
 	localAddr   = flag.String("l", ":9999", "local address")
 	remoteAddr  = flag.String("r", "localhost:80", "remote address")
 	verbose     = flag.Bool("v", false, "display server actions")
@@ -29,19 +32,23 @@ var (
 	replace     = flag.String("replace", "", "replace regex (in the form 'regex~replacer')")
 )
 
+//函数声明 func
 func main() {
 	flag.Parse()
-
+    
+    //函数内部简短变量声明语句
+    //JSON结构
 	logger := proxy.ColorLogger{
 		Verbose: *verbose,
 		Color:   *colors,
 	}
-
+    //localAddr,remoteAddr为指针
 	logger.Info("go-tcp-proxy (%s) proxing from %v to %v ", version, *localAddr, *remoteAddr)
-
+    //返回多个变量，通常最后一个设定为err
 	laddr, err := net.ResolveTCPAddr("tcp", *localAddr)
 	if err != nil {
 		logger.Warn("Failed to resolve local address: %s", err)
+        //退出
 		os.Exit(1)
 	}
 	raddr, err := net.ResolveTCPAddr("tcp", *remoteAddr)
@@ -49,6 +56,7 @@ func main() {
 		logger.Warn("Failed to resolve remote address: %s", err)
 		os.Exit(1)
 	}
+    
 	listener, err := net.ListenTCP("tcp", laddr)
 	if err != nil {
 		logger.Warn("Failed to open local port to listen: %s", err)
@@ -61,7 +69,8 @@ func main() {
 	if *veryverbose {
 		*verbose = true
 	}
-
+    
+    //循环监听，等待客户端接入
 	for {
 		conn, err := listener.AcceptTCP()
 		if err != nil {
@@ -69,7 +78,9 @@ func main() {
 			continue
 		}
 		connid++
-
+        
+        //指针类型
+        //创建p变量指向proxy.Proxy
 		var p *proxy.Proxy
 		if *unwrapTLS {
 			logger.Info("Unwrapping TLS")
@@ -89,7 +100,7 @@ func main() {
 			Prefix:      fmt.Sprintf("Connection #%03d ", connid),
 			Color:       *colors,
 		}
-
+        //通过协程的方式运行
 		go p.Start()
 	}
 }

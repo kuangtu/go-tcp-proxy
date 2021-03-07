@@ -164,6 +164,9 @@ func (p *Proxy) pipe(src, dst io.ReadWriter) {
 			p.err("Write failed '%s'\n", err)
 			return
 		}
+        //读取错误是返回的n，在之前已经处理
+        //否则直接unit64会有问题
+        //类型转换通过(type)var
 		if islocal {
 			p.sentBytes += uint64(n)
 		} else {
